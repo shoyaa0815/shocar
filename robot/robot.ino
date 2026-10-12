@@ -1,11 +1,11 @@
-const motorL_F = 10;
-const motorR_F = 11;
+const int motorL_F = 10;
+const int motorR_F = 11;
 
-const motorL_B = 12;
-const motorR_B = 13;
+const int motorL_B = 12;
+const int motorR_B = 13;
 
-const motorR_arm = 14;
-const motorL_arm = 15;
+const int motorR_arm = 14;
+const int motorL_arm = 15;
 
 void setup() {
   pinMode(motorL_F, OUTPUT);

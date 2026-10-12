@@ -17,7 +17,3 @@ void turnleft() {
   digitalWrite(motorL_B, LOW);
   digitalWrite(motorR_B, HIGH);
 }
-
-void clean_arm() {
-  
-}
