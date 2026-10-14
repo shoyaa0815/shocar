@@ -1,19 +1,27 @@
-void forward() {
+void fw() {
   digitalWrite(motorL_F, HIGH);
   digitalWrite(motorR_F, HIGH);
 }
 
-void backward() {
+void bw() {
   digitalWrite(motorL_B, HIGH);
   digitalWrite(motorR_B, HIGH);
 }
 
-void turnright() {
+void tr() {
   digitalWrite(motorL_B, HIGH);
   digitalWrite(motorR_B, LOW);
 }
 
-void turnleft() {
+void tl() {
   digitalWrite(motorL_B, LOW);
   digitalWrite(motorR_B, HIGH);
+}
+
+void stop() {
+  digitalWrite(motorL_F, LOW);
+  digitalWrite(motorR_F, LOW);
+
+  digitalWrite(motorL_B, LOW);
+  digitalWrite(motorR_B, LOW);
 }

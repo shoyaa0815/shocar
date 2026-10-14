@@ -1,11 +1,8 @@
-const int motorL_F = 10;
-const int motorR_F = 11;
+const int motorL_F = 26;
+const int motorR_F = 27;
 
-const int motorL_B = 12;
-const int motorR_B = 13;
-
-const int motorR_arm = 14;
-const int motorL_arm = 15;
+const int motorL_B = 13;
+const int motorR_B = 14;
 
 void setup() {
   pinMode(motorL_F, OUTPUT);
@@ -14,11 +11,8 @@ void setup() {
   pinMode(motorL_B, OUTPUT);
   pinMode(motorR_B, OUTPUT);
 
-  pinMode(motorR_arm, OUTPUT);
-  pinMode(motorL_arm, OUTPUT);
-
 }
 
 void loop() {
-  forward();
+  fw();
 }
