@@ -1,18 +1,25 @@
-const int motorL_F = 26;
-const int motorR_F = 27;
+const int motorF_L = 26;
+const int motorF_R = 27;
 
-const int motorL_B = 13;
-const int motorR_B = 14;
+const int motorB_L = 13;
+const int motorB_R = 14;
 
 void setup() {
-  pinMode(motorL_F, OUTPUT);
-  pinMode(motorR_F, OUTPUT);
+  Serial.begin(115200);
+  Serial.println("test code");
+  set_wifi();
 
-  pinMode(motorL_B, OUTPUT);
-  pinMode(motorR_B, OUTPUT);
+  pinMode(motorF_L, OUTPUT);
+  pinMode(motorF_R, OUTPUT);
+
+  pinMode(motorB_L, OUTPUT);
+  pinMode(motorB_R, OUTPUT);
+
+  stopMotor();
+  startRemote();
 
 }
 
 void loop() {
-  fw();
+  loopRemote();
 }

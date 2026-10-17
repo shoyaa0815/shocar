@@ -3,3 +3,13 @@
 const char*ssid = "wifi name";
 const char*password = "password";
 
+void set_wifi() {
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("connect wifi");
+}
