@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 
 WebServer server(80);
+unsigned long lastCommandTime = 0;
 
 void inputCommand() {
   JsonDocument data;
@@ -13,15 +14,19 @@ void inputCommand() {
 
   
   if (command == "forward") {
+    lastCommandTime = millis();
     fw();
   }
   else if (command == "backward") {
+    lastCommandTime = millis();
     bw();
   }
   else if (command == "left") {
+    lastCommandTime = millis();
     sl();
   }
   else if (command == "right") {
+    lastCommandTime = millis();
     sr();
   }
   else {
@@ -38,4 +43,7 @@ void startRemote() {
 
 void loopRemote() {
   server.handleClient();
+  if (millis() - lastCommandTime >= 500) {
+    stopMotor();
+  }
 }
