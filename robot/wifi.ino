@@ -8,8 +8,9 @@ void set_wifi() {
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    Serial.print("wait ");
   }
 
   Serial.println("connect wifi");
+  Serial.println(WiFi.localIP());
 }

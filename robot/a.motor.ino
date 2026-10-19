@@ -15,18 +15,14 @@ void bw() {
 
 }
 
-void tr() {
+void sr() {
   digitalWrite(motorF_L, HIGH);
-  delay(300);
   digitalWrite(motorB_R, HIGH);
-  delay(300);
 }
 
-void tl() {
+void sl() {
   digitalWrite(motorB_L, HIGH);
-  delay(300);
   digitalWrite(motorF_R, HIGH);
-  delay(300);
 }
 
 void stopMotor() {

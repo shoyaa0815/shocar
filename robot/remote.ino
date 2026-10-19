@@ -19,10 +19,10 @@ void inputCommand() {
     bw();
   }
   else if (command == "left") {
-    tl();
+    sl();
   }
   else if (command == "right") {
-    tr();
+    sr();
   }
   else {
     stopMotor();
