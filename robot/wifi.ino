@@ -1,10 +1,8 @@
 #include <WiFi.h>
-
-const char*ssid = "wifi name";
-const char*password = "password";
+#include "robot_config.h"
 
 void set_wifi() {
-  WiFi.begin(ssid, password);
+  WiFi.begin(wifi_name, password);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
