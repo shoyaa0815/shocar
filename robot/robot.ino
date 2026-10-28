@@ -9,6 +9,9 @@ const int button = 25;
 bool start = false;
 
 void setup() {
+  Serial.begin(115200);
+  Serial.println("boot");
+
   pinMode(motorF_L, OUTPUT);
   pinMode(motorF_R, OUTPUT);
 
@@ -18,22 +21,34 @@ void setup() {
   pinMode(button, INPUT_PULLUP);
 
   stopMotor();
+  Serial.println("motor ok");
 
   setServo();
-  
-  Serial.begin(115200);
-  set_wifi();
+  Serial.println("servo ok");
 
-  startRemote();
+  // set_wifi();
+
+  // startRemote();
 
 }
 
 void loop() {
-  if(digitalRead(button) == 0) {
-    start = true;
-  }
+  // if(digitalRead(button) == 0) {
+  //   start = true;
+  // }
 
-  if(start) {
-    loopRemote();
-  }
+  // if(start) {
+  //   loopRemote();
+  // }
+
+  // loopRemote();
+
+  servo1(60);    // ไป 60 องศา
+  Serial.println("60");
+  delay(1000);   // รอ 1 วินาที
+
+  servo1(120);   // ไป 120 องศา
+  Serial.println("120");
+  delay(1000);
+
 }
