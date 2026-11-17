@@ -1,4 +1,3 @@
-"""Experimental obstacles from relative inverse depth, never from floor colour."""
 from dataclasses import dataclass, field
 
 import cv2
@@ -22,7 +21,6 @@ class Detection:
 
     @property
     def obstacle_scores(self):
-        """Image occupancy, not clearance or distance in metres."""
         h, w = self.mask.shape
         return {side: float(np.mean(self.mask[y1:y2, x1:x2] > 0))
                 for side, (x1, y1, x2, y2) in side_bounds(w, h).items()}
@@ -48,11 +46,6 @@ def side_bounds(width: int, height: int):
 
 
 def floor_plane(depth: np.ndarray):
-    """Fit an increasing inverse-depth plane with spatially spread floor support.
-
-    This is a fixed-camera/pitched-down floor heuristic, not semantic floor
-    segmentation. If evidence is weak, callers must report unknown, not clear.
-    """
     h, w = depth.shape
     ys, xs = np.mgrid[round(h * .45):round(h * .98):4, round(w * .05):round(w * .95):4]
     if xs.size < 30:
@@ -90,12 +83,6 @@ def floor_plane(depth: np.ndarray):
 
 
 def near_foreground(depth: np.ndarray):
-    """Find a near component with a local depth jump, without requiring floor.
-
-    A smooth near/far gradient (e.g. visible floor or wall) is not sufficient.
-    Compare its immediate inner boundary with a surrounding farther ring.
-    This can flag foreground but cannot establish that an unseen area is clear.
-    """
     near = (depth > .65).astype(np.uint8)
     count, labels, stats, _ = cv2.connectedComponentsWithStats(near)
     mask = np.zeros(depth.shape, np.uint8)
@@ -120,11 +107,6 @@ def near_foreground(depth: np.ndarray):
 
 
 def farthest_floor(depth, plane, obstacle_mask, geometry):
-    """Farthest supported floor patch connected to visible foreground floor.
-
-    This is a floor heuristic, not a claim that the line to it is traversable.
-    Erosion rejects isolated pixels and keeps endpoints away from object edges.
-    """
     h, w = depth.shape
     floor = ((np.abs(depth - plane) < .045) & (obstacle_mask == 0)).astype(np.uint8)
     floor[:round(h * .15)] = 0

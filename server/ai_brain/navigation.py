@@ -1,4 +1,3 @@
-"""Decisions from distinct left/right depth observations; no network side effects."""
 import math
 
 TURN_SECONDS = 0.2

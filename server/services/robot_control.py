@@ -38,7 +38,6 @@ class RobotControl:
 
 
 class RobotCoordinator:
-    """Serialize board requests and keep one controller until its final stop."""
 
     def __init__(self):
         self.owner = None

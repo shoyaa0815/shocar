@@ -1,4 +1,3 @@
-"""One shared depth worker; no robot commands and no queued camera frames."""
 import asyncio
 import base64
 from contextlib import suppress

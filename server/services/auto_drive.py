@@ -1,4 +1,3 @@
-"""Server-owned automatic driving, leased to one visible dashboard."""
 import asyncio
 from contextlib import suppress
 import logging

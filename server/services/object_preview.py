@@ -1,4 +1,3 @@
-"""Shared object worker with frame-paired boxes; never an input to AutoDrive."""
 import asyncio
 from contextlib import suppress
 import logging

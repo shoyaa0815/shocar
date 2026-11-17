@@ -1,4 +1,3 @@
-"""Local-only Depth Anything V2 Small. Imports/weights are loaded in a worker."""
 from pathlib import Path
 
 import numpy as np

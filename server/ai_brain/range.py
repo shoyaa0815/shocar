@@ -1,10 +1,3 @@
-"""Rough ground distance from assumed camera geometry, not a measurement.
-
-A single camera has no metric scale. These numbers assume the object touches a
-flat floor and that height, tilt, and field of view match the real mount.
-They are for the dashboard preview only: never certify clearance with them and
-never drive from them.
-"""
 import math
 import os
 from dataclasses import dataclass
@@ -35,7 +28,6 @@ def _setting(name, default, low, high):
 
 @dataclass(frozen=True)
 class CameraGeometry:
-    """Assumed mount geometry; change the three values after real measuring."""
 
     height_cm: float = DEFAULT_HEIGHT_CM
     tilt_deg: float = DEFAULT_TILT_DEG
@@ -51,7 +43,6 @@ class CameraGeometry:
         return (width / 2) / math.tan(math.radians(self.hfov_deg) / 2)
 
     def distance_cm(self, base_v: float, width: int, height: int):
-        """Horizontal ground distance for an image row, else None if unknown."""
         focal = self.focal_px(width)
         middle = height / 2
         tilt = math.radians(self.tilt_deg)
@@ -64,7 +55,6 @@ class CameraGeometry:
         return int(round(distance / STEP_CM) * STEP_CM)
 
     def objects(self, boxes, shape, *, estimate=True):
-        """Every box with its base point and distance estimate, nearest first."""
         height, width = shape
         found = []
         for x, y, box_w, box_h in boxes:

@@ -1,4 +1,3 @@
-"""Local, prompt-free object proposals for the third dashboard panel only."""
 from pathlib import Path
 import os
 

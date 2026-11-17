@@ -15,7 +15,6 @@ MAX_FRAME_BYTES = 4 * 1024 * 1024
 
 
 def camera_url(value: str) -> str:
-    """Accept the app's base address or its explicit MJPEG endpoint."""
     value = value.strip()
     if not value:
         return ""
@@ -31,7 +30,6 @@ def camera_url(value: str) -> str:
 
 
 async def latest_jpegs(chunks):
-    """Extract JPEGs across arbitrary HTTP chunks, discarding older complete frames."""
     buffer = bytearray()
     async for chunk in chunks:
         buffer.extend(chunk)
