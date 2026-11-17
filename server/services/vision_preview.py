@@ -105,7 +105,6 @@ class VisionPreview:
             camera = self.camera
             if (not camera.connected or camera.last_frame_at is None
                     or time.monotonic() - camera.last_frame_at >= FRESH_SECONDS):
-                # Forget the previous sequence on a gap; do not publish a past green result.
                 self.last_sequence = -1
                 self.preview_frame = None
                 await asyncio.sleep(.1)
@@ -124,7 +123,6 @@ class VisionPreview:
             if camera.sequence == self.last_sequence:
                 await asyncio.sleep(.04)
                 continue
-            # No await between reading the frame and its metadata.
             jpeg, sequence, frame_at = camera.image, camera.sequence, camera.last_frame_at
             self.last_sequence = sequence
             started = time.monotonic()
@@ -145,5 +143,4 @@ class VisionPreview:
                 self.result = unavailable('error', 'วิเคราะห์ภาพไม่สำเร็จ · ยังประเมินไม่ได้', device=self.model.device)
                 self.frame_at = None
                 self.preview_frame = None
-            # Cap the shared worker at 5 FPS, independent of viewer count.
             await asyncio.sleep(max(.02, .2 - (time.monotonic() - started)))

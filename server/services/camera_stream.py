@@ -39,7 +39,6 @@ async def latest_jpegs(chunks):
         while True:
             start = buffer.find(b"\xff\xd8")
             if start < 0:
-                # Keep a possible first byte of a split SOI marker.
                 buffer[:] = buffer[-1:]
                 break
             if start:
@@ -137,6 +136,5 @@ class CameraStream:
                     self.connected = False
                     self.state = "disconnected"
                     self.fps = 0.0
-                    # Do not expose camera addresses or credentials in errors.
                     self.error = "รับภาพไม่ได้ · ตรวจสอบ IP Webcam และเครือข่าย · กำลังลองใหม่"
                 await asyncio.sleep(RETRY_SECONDS)

@@ -6,7 +6,6 @@ import numpy as np
 
 from server.ai_brain.range import CameraGeometry
 
-# Fixed image-space watch zone. These are not calibrated vehicle dimensions.
 WATCH_ZONE = (0.0, 0.50, 1.0, 0.95)
 
 
@@ -18,7 +17,6 @@ class Detection:
     blocked: bool | None
     reason: str
     floor_support: float = 0.0
-    # Keep boxes but omit metric estimates when the floor is not identified.
     objects: list[dict] = field(default_factory=list)
     farthest_floor: dict | None = None
 
@@ -81,7 +79,6 @@ def floor_plane(depth: np.ndarray):
     coefficients = np.linalg.lstsq(design[best], z[best], rcond=None)[0]
     if not (.12 < coefficients[1] < 3.5 and abs(coefficients[0]) < 1):
         return None, 0.0
-    # A tabletop/wall or a tiny visible patch should not certify the floor.
     if np.ptp(y[best]) < .32 or np.ptp(x[best]) < .65:
         return None, 0.0
     bottom = y > .85
@@ -115,8 +112,6 @@ def near_foreground(depth: np.ndarray):
             continue
         if np.median(depth[inner]) - np.median(depth[farther]) < .16:
             continue
-        # Enough of the whole boundary must have farther context; isolated
-        # texture noise beside a gradual surface is insufficient evidence.
         if np.count_nonzero(farther) / max(1, np.count_nonzero(outer)) < .3:
             continue
         mask[component > 0] = 255
@@ -143,8 +138,6 @@ def farthest_floor(depth, plane, obstacle_mask, geometry):
     if not connected:
         return None
     supported = np.isin(labels, connected)
-    # Ground distance decreases down the image. Skip rows outside the metric
-    # range instead of clamping them into an invented 300 cm measurement.
     for y in np.flatnonzero(supported.any(axis=1)):
         distance = geometry.distance_cm(int(y), w, h)
         if distance is None:
@@ -178,8 +171,6 @@ class Detector:
                       'พื้นไม่ชัดและยังไม่พบขอบวัตถุใกล้ในกรอบ · ยังประเมินไม่ได้')
             return Detection(depth, mask, boxes, blocked, reason,
                              objects=self.geometry.objects(boxes, depth.shape, estimate=False))
-        # Larger model output means nearer. The same image row's fitted floor
-        # must be farther away; near floor by itself must not trigger an alarm.
         mask = ((depth - plane > .085) & (depth > .52)).astype(np.uint8) * 255
         h, w = depth.shape
         mask[:round(h * .15)] = 0
@@ -213,8 +204,6 @@ def render(image: np.ndarray, result: Detection):
             color = (40, 60, 245) if blocked else (90, 215, 105)
             if blocked is None:
                 color = (30, 185, 245)
-            # Distinct edges at the split prevent the other side's colour
-            # overwriting this side's border.
             edge = x2 - 1
             cv2.rectangle(view, (x1, y1), (edge, y2), color, 2)
             cv2.rectangle(view, (x1, y1 - 24), (min(edge, x1 + 70), y1 - 2), (15, 15, 15), -1)

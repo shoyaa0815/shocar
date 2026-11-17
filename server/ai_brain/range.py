@@ -55,7 +55,6 @@ class CameraGeometry:
         focal = self.focal_px(width)
         middle = height / 2
         tilt = math.radians(self.tilt_deg)
-        # Rows above the horizon line do not correspond to floor at all.
         if base_v <= middle - focal * math.tan(tilt) or base_v >= height:
             return None
         depression = tilt + math.atan((base_v - middle) / focal)

@@ -3,7 +3,7 @@ import math
 
 TURN_SECONDS = 0.2
 YELLOW_HOLD_SECONDS = 3.0
-DEFAULT_SPIN_SECONDS = 4.0  # Provisional; calibrate cumulative turning time on the robot.
+DEFAULT_SPIN_SECONDS = 4.0
 
 
 class Navigation:
@@ -43,7 +43,6 @@ class Navigation:
         return self.failure
 
     def acknowledge_stop(self, now):
-        # Count through the stop acknowledgement, including command latency.
         if self.search_phase in ('waiting', 'checking', 'parked') and self.stopped_at is None:
             self.stopped_at = now
             if self.turn_started is not None:
@@ -144,7 +143,6 @@ class Navigation:
             self.candidate, self.count = desired, 1
         else:
             self.count += 1
-        # Stop while changing direction; require three distinct observations.
         if self.count >= 3:
             self.command = desired
         elif desired != self.command:

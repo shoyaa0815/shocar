@@ -173,5 +173,4 @@ class AutoDrive:
                     await self.disable('ระบบขับผิดพลาด · ต้องกดเริ่มใหม่')
                 await asyncio.sleep(0.1)
         finally:
-            # Cancellation must not leave a previously sent movement active.
             await self.disable('ระบบขับหยุดทำงาน')

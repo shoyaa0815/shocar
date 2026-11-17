@@ -6,8 +6,6 @@ import numpy as np
 
 CHECKPOINT = Path(__file__).resolve().parents[2] / 'models/yoloe-v8s-seg-pf.pt'
 
-# The panel is for things and furniture, not people or building surfaces.
-# Compare complete vocabulary names, never substrings (e.g. "floor lamp").
 EXCLUDED_NAMES = frozenset({
     'person', 'people', 'human', 'man', 'woman', 'boy', 'girl', 'child', 'baby',
     'floor', 'flooring', 'wall', 'ceiling', 'roof', 'ground', 'sky',
@@ -40,7 +38,6 @@ class ObjectModel:
             return
         if not self.checkpoint.is_file():
             raise FileNotFoundError('Object checkpoint is missing')
-        # Runtime never installs packages or downloads weights/text encoders.
         os.environ.setdefault('YOLO_AUTOINSTALL', 'false')
         os.environ.setdefault('YOLO_OFFLINE', 'true')
         import torch
@@ -69,5 +66,4 @@ class ObjectModel:
             y1, y2 = np.clip([y1, y2], 0, height)
             if x2 > x1 and y2 > y1:
                 boxes.append([int(x1), int(y1), int(x2 - x1), int(y2 - y1)])
-        # No depth, floor, watch-zone, or metric-distance filtering here.
         return boxes

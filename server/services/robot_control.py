@@ -68,6 +68,5 @@ class RobotCoordinator:
 
     async def emergency_stop(self, client):
         async with self.lock:
-            # Revoke first: queued movement from the previous owner is rejected.
             self.owner = None
             return await self.robot.send(client, 'stop')

@@ -64,8 +64,6 @@ class ObjectPreview:
         image = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
         if image is None or min(image.shape[:2]) < 32:
             raise ValueError('Invalid camera image')
-        # Keep more source detail than the depth preview. Model output boxes
-        # use these image coordinates, as does the JPEG returned to the viewer.
         h, w = image.shape[:2]
         scale = min(1280 / w, 1280 / h, 1)
         image = cv2.resize(image, (round(w * scale), round(h * scale)))
@@ -117,9 +115,6 @@ class ObjectPreview:
                     continue
             jpeg, sequence, frame_at = camera.image, camera.sequence, camera.last_frame_at
             floor = None
-            # Reuse a fresh depth source when available, so optional floor lines
-            # and boxes refer to exactly the same frame. Depth is optional:
-            # missing/slow/failed depth still permits detection on raw frames.
             paired = self.vision.preview_frame
             if (paired and paired['sequence'] > self.last_sequence
                     and time.monotonic() - paired['frame_at'] < FRESH_SECONDS):

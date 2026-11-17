@@ -26,7 +26,6 @@ async def remote_socket(websocket: WebSocket):
     try:
         async with httpx.AsyncClient(timeout=0.4, trust_env=False) as client:
             try:
-                # Confirm a stop before accepting any movement.
                 released = await control.send(websocket, client, "stop")
                 await websocket.send_json(robot.status(not released))
                 while True:
