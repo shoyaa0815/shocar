@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shocar · รีโมทหุ่นยนต์</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#f5f5f5;font:16px system-ui,sans-serif}main{max-width:640px;margin:0 auto;padding:32px 20px}.brand{font-size:13px;letter-spacing:3px}h1{font-size:30px}p{color:#b3b3b3;line-height:1.7}a{color:white}.panel{margin:24px 0;padding:20px;border:1px solid #3d3d3d;border-radius:16px;background:#171717}.status{min-height:26px}.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}button{min-height:90px;border:1px solid #555;border-radius:14px;background:#222;color:white;font:600 18px system-ui;touch-action:none;user-select:none;-webkit-user-select:none}button:disabled{opacity:.35}button.active{background:white;color:black}button:focus-visible{outline:3px solid #8ac7ff;outline-offset:3px}#stop{border-color:#f37474;color:#ffb0b0;background:#3a1818}.forward{grid-column:2}.left{grid-column:1}.backward{grid-column:2}.note{font-size:14px}.command{font-size:24px;font-weight:600}
+</style>
+</head>
+<body><main>
+<div class="brand">SHOCAR / REMOTE</div><h1>รีโมทหุ่นยนต์</h1>
+<p>กดปุ่มทิศทางค้างเพื่อขับ · ปล่อยเพื่อหยุด</p>
+<div class="panel"><div id="status" class="status" role="status">กำลังเชื่อมต่อ…</div><p>คำสั่งล่าสุดจากเซิร์ฟเวอร์</p><div id="command" class="command">หยุด</div></div>
+<div class="pad" aria-label="ปุ่มควบคุมรถ">
+<button class="forward" data-command="forward" disabled>↑<br>เดินหน้า</button>
+<button class="left" data-command="left" disabled>←<br>ซ้าย</button>
+<button id="stop" type="button">■<br>หยุด</button>
+<button data-command="right" disabled>→<br>ขวา</button>
+<button class="backward" data-command="backward" disabled>↓<br>ถอยหลัง</button>
+</div>
+<p class="note">ใช้ปุ่มลูกศรหรือ W A S D ได้ · Space หยุด<br>ควบคุมได้ครั้งละหนึ่งหน้า เซิร์ฟเวอร์ส่งคำสั่งหยุดเมื่อรีโมทหลุด<br>สถานะออนไลน์หมายถึงบอร์ดตอบรับคำสั่ง ยังไม่ใช่การยืนยันว่าล้อหมุนจริง</p>
+<p><a href="/dashboard">เปิด Dashboard</a></p>
+</main><script>
+const buttons = [...document.querySelectorAll('[data-command]')];
+const status = document.getElementById('status');
+const commandLabel = document.getElementById('command');
+const names = {forward:'เดินหน้า',backward:'ถอยหลัง',left:'ซ้าย',right:'ขวา',stop:'หยุด'};
+const keys = {ArrowUp:'forward',w:'forward',ArrowDown:'backward',s:'backward',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right'};
+let socket, active = null, input = null, ready = false, lastReply = 0, awaiting = false;
+function send(command) {
+  if (socket?.readyState === WebSocket.OPEN && socket.bufferedAmount === 0 && (!awaiting || command === 'stop')) {
+    awaiting = true;
+    socket.send(command);
+  }
+}
+function stop() {
+  active = null; input = null;
+  for (const button of buttons) button.classList.remove('active');
+  send('stop');
+}
+function start(command, source) {
+  if (!ready || active || document.hidden) return;
+  active = command; input = source;
+  buttons.find(button => button.dataset.command === command).classList.add('active');
+  send(command);
+}
+for (const button of buttons) {
+  button.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    start(button.dataset.command, event.pointerId);
+  });
+  for (const name of ['pointerup','pointercancel','lostpointercapture']) {
+    button.addEventListener(name, event => { if (input === event.pointerId) stop(); });
+  }
+  button.addEventListener('contextmenu', event => event.preventDefault());
+}
+document.getElementById('stop').addEventListener('pointerdown', stop);
+document.getElementById('stop').addEventListener('click', stop);
+window.addEventListener('keydown', event => {
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  if (key === ' ' || key === 'Escape') { event.preventDefault(); stop(); return; }
+  if (keys[key]) { event.preventDefault(); if (!event.repeat) start(keys[key], key); }
+});
+window.addEventListener('keyup', event => {
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  if (input === key) stop();
+});
+window.addEventListener('blur', stop);
+window.addEventListener('pagehide', () => { stop(); socket?.close(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+function connect() {
+  const target = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/remote`);
+  socket = target;
+  awaiting = false;
+  lastReply = 0;
+  target.onmessage = event => {
+    awaiting = false;
+    lastReply = Date.now();
+    const data = JSON.parse(event.data);
+    ready = data.configured && data.robot_online;
+    for (const button of buttons) button.disabled = !ready;
+    status.textContent = !data.configured ? 'ยังไม่ได้ตั้งค่าการเชื่อมต่อหุ่นยนต์' : ready ? 'หุ่นยนต์ออนไลน์ · พร้อมควบคุม' : 'รอหุ่นยนต์เชื่อมต่อ';
+    commandLabel.textContent = names[data.command] || 'หยุด';
+    if ((!ready || data.release_required) && active) stop();
+  };
+  target.onclose = event => {
+    ready = false; stop();
+    for (const button of buttons) button.disabled = true;
+    commandLabel.textContent = 'หยุด';
+    status.textContent = event.code === 1008 ? 'มีรีโมทอื่นใช้งานอยู่ หรือไม่อนุญาตการเชื่อมต่อ · ปิดหน้าอื่นแล้วโหลดใหม่' : 'ขาดการเชื่อมต่อ · กำลังเชื่อมใหม่…';
+    if (event.code !== 1008) setTimeout(connect, 2000);
+  };
+}
+setInterval(() => {
+  if (active && (!ready || Date.now() - lastReply > 600)) stop();
+  if (socket?.readyState === WebSocket.OPEN) {
+    if (lastReply && Date.now() - lastReply > 1500) { socket.close(); return; }
+    send(active || 'stop');
+  }
+}, 100);
+connect();
+</script></body></html>

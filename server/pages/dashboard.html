@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shocar · Vision dashboard / Depth preview</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0b0b;--panel:#171717;--line:#3d3d3d;--text:#f5f5f5;--muted:#b3b3b3}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px system-ui,sans-serif}main{max-width:1600px;margin:auto;padding:28px}header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:26px}.brand{font-size:13px;letter-spacing:3px;font-weight:700}h1{font-size:28px;margin:8px 0}p{color:var(--muted);line-height:1.65;margin:8px 0}a{color:var(--text)}.badge{border:1px solid var(--line);border-radius:24px;padding:10px 16px;font-size:14px}.grid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:20px;align-items:start}.views{display:grid;grid-template-columns:1fr;gap:18px;min-width:0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;min-width:0}.panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}h2{font-size:16px;margin:0}.label{font-size:12px;color:var(--muted)}.screen{position:relative;aspect-ratio:4/3;background:#050505;display:grid;place-items:center}.screen img{width:100%;height:100%;object-fit:contain;position:absolute}.screen canvas{position:absolute;width:100%;height:100%;pointer-events:none}.empty{text-align:center;padding:24px}.empty strong{display:block;font-size:20px;margin-bottom:12px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{padding:14px}.value{font-size:25px;font-weight:650;margin-top:8px;font-variant-numeric:tabular-nums}.unit{font-size:12px;color:var(--muted);font-weight:400}.help{padding:18px;font-size:14px;margin-top:18px}.decision{font-size:25px;font-weight:700;color:#ffd07a;margin:14px 0}.decision[data-state=blocked]{color:#ff7777}.decision[data-state=clear]{color:#8bdd9b}.side-status{display:flex;gap:12px;justify-content:space-between;margin:12px 0;font-size:14px}.side-status [data-state=blocked]{color:#ff7777}.side-status [data-state=clear]{color:#8bdd9b}.side-status [data-state=unknown]{color:#ffd07a}[hidden]{display:none!important}
+.distance-panel{grid-column:1/-1}.range-status{margin:12px 18px 16px;font-size:13px;color:var(--muted)}.header-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}.fullscreen-button{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--panel);color:var(--text);font:inherit;font-size:14px;cursor:pointer}.fullscreen-button:hover{border-color:#fff}.fullscreen-button:focus-visible{outline:2px solid #fff;outline-offset:3px}.fullscreen-button:disabled{opacity:.5;cursor:not-allowed}.image-fullscreen{position:absolute;top:12px;right:12px;z-index:1;background:#171717ee}#fullscreen-message{font-size:14px;color:#d4d4d4}#dashboard:fullscreen{width:100%;max-width:none;height:100%;margin:0;overflow:auto;background:var(--bg)}#camera-screen:fullscreen{width:100%;height:100%;aspect-ratio:auto;background:#050505}@media(max-width:1150px){.grid{grid-template-columns:1fr}aside{max-width:none}.stats{grid-template-columns:repeat(4,1fr)}}@media(max-width:650px){main{padding:16px}header{align-items:flex-start;flex-direction:column}.views{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}h1{font-size:24px}}
+.view-settings{padding:12px 18px;border-bottom:1px solid var(--line);font-size:14px}.view-settings summary{cursor:pointer}.overlay-options{display:flex;flex-wrap:wrap;gap:12px 20px;border:0;padding:14px 0;margin:0}.overlay-options label{display:flex;align-items:center;gap:8px}.overlay-options input{accent-color:#ffa53d;width:18px;height:18px}.view-settings .fullscreen-button{padding:7px 10px}.overlay-note{padding:0 18px;font-size:13px}#pending-zone{z-index:1}
+</style>
+</head>
+<body>
+<main id="dashboard">
+<header><div><div class="brand">SHOCAR / DEPTH</div><h1>ทดลองมองสิ่งกีดขวางด้วยกล้องเดียว</h1></div><div class="header-actions"><a class="fullscreen-button" href="/remote" target="_blank" rel="noopener">รีโมทหุ่นยนต์ ↗</a><div id="connection" class="badge" role="status">กำลังเชื่อมต่อ server…</div><button id="dashboard-fullscreen" class="fullscreen-button" type="button" aria-controls="dashboard" aria-pressed="false">Dashboard เต็มจอ</button></div></header>
+<p id="fullscreen-message" role="status" hidden></p>
+<div class="grid"><div class="views">
+<section class="panel" aria-label="ภาพจริงและเขตเฝ้าระวัง"><div class="panel-title"><h2>ภาพจริง / เขตเฝ้าระวัง</h2><span id="camera" class="label">รอกล้อง</span></div><details id="first-settings" class="view-settings"><summary>ตั้งค่าการแสดงผลจอ 1</summary><fieldset class="overlay-options"><legend>เปิด–ปิดเฉพาะภาพจอ 1</legend>
+<label><input id="overlay-zones" type="checkbox" checked>กรอบซ้าย–ขวา + LEFT/RIGHT</label>
+<label><input id="overlay-depthBoxes" type="checkbox" checked>กรอบจากความลึก</label>
+<label><input id="overlay-objects" type="checkbox" checked>กรอบสิ่งของ</label>
+<label><input id="overlay-floorLine" type="checkbox" checked>เส้นพื้นไกลสุด + ระยะ</label>
+</fieldset><div class="header-actions"><button id="overlays-on" class="fullscreen-button" type="button">เปิดทั้งหมด</button><button id="overlays-off" class="fullscreen-button" type="button">ปิดทั้งหมด</button></div></details><div id="camera-screen" class="screen"><button id="image-fullscreen" class="fullscreen-button image-fullscreen" type="button" aria-controls="camera-screen" aria-pressed="false">ภาพเต็มจอ</button><div id="empty" class="empty"><strong>รอภาพจาก IP Webcam</strong></div><img id="frame" alt="ภาพจากกล้องมือถือและกรอบสิ่งกีดขวาง" hidden><canvas id="pending-zone" aria-hidden="true"></canvas></div><p id="first-overlay-status" class="overlay-note" role="status">รอภาพจากกล้อง</p></section>
+<section class="panel" aria-label="ภาพความลึก"><div class="panel-title"><h2>ภาพความลึก / ใกล้–ไกล</h2></div><div id="depth-screen" class="screen"><div id="depth-empty" class="empty"><strong>รอผลความลึก</strong><p id="depth-message">รอภาพจากกล้อง</p></div><img id="depth" alt="ภาพความลึก สีสว่างหมายถึงใกล้กว่า สีมืดหมายถึงไกลกว่า" hidden></div></section>
+<section class="panel distance-panel" aria-label="ตรวจจับสิ่งของทั่วภาพ"><div class="panel-title"><h2>ตรวจจับสิ่งของ / ไม่กรองระยะ</h2><span class="label">กรอบส้ม: สิ่งของ · ฟ้า: พื้นไกลสุดเมื่อประเมินได้</span></div><div id="range-screen" class="screen"><div id="range-empty" class="empty"><strong>รอผลตรวจจับสิ่งของ</strong><p id="range-message">รอภาพจากกล้อง</p></div><img id="range-frame" alt="ภาพที่ใช้ตรวจจับพร้อมกรอบสิ่งของและเส้นพื้นไกลสุดเมื่อประเมินได้" hidden><canvas id="range-overlay" aria-hidden="true"></canvas></div><p id="range-status" class="range-status" role="status">รอผลตรวจจับสิ่งของ</p></section>
+</div><aside>
+<div class="stats"><section class="panel stat"><div class="label">ภาพเข้า</div><div class="value"><span id="fps">—</span> <span class="unit">FPS</span></div></section><section class="panel stat"><div class="label">อายุภาพเข้า</div><div class="value"><span id="age">—</span> <span class="unit">วินาที</span></div></section><section class="panel stat"><div class="label">วิเคราะห์ล่าสุด</div><div class="value"><span id="processing">—</span> <span class="unit">ms</span></div></section><section class="panel stat"><div class="label">อายุผลวิเคราะห์</div><div class="value"><span id="analysis-age">—</span> <span class="unit">วินาที</span></div></section></div>
+<section class="panel help"><h2>สถานะซ้าย–ขวา</h2><div id="decision" class="decision" role="status" aria-live="polite">ยังประเมินไม่ได้</div><div class="side-status"><span id="side-left" role="status">ซ้าย: ประเมินไม่ได้</span><span id="side-right" role="status">ขวา: ประเมินไม่ได้</span></div><p id="vision-reason">รอภาพและโมเดลพร้อม</p></section>
+<section class="panel help" aria-label="ควบคุมการขับอัตโนมัติ">
+<h2>ขับอัตโนมัติจากกรอบ</h2>
+<div id="auto-state" class="decision" role="status" aria-live="polite">ปิดโหมดอัตโนมัติ</div>
+<p id="auto-reason">กำลังเชื่อมต่อระบบควบคุม…</p>
+<div class="header-actions">
+<button id="auto-start" class="fullscreen-button" type="button" disabled>เริ่มขับอัตโนมัติ</button>
+<button id="auto-stop" class="fullscreen-button" type="button" style="background:#511c1c;border-color:#ff7777" disabled>■ หยุด</button>
+</div>
+<p>เหลืองทั้งสองข้างต่อเนื่อง 3 วินาทีจึงหมุนหาทางทีละช่วง สูงสุดประมาณหนึ่งรอบ เจอเขียวทั้งคู่ครบ 3 เฟรมจะไปต่อเอง หากไม่พบทางจะหยุดรอ ปิดหรือสลับแท็บจะปิดโหมด</p>
+<p>สีเขียวยังไม่รับประกันว่ารถผ่านได้ หาก Wi-Fi ขาดหรือ Python หยุด บอร์ดเดิมอาจขับต่อแม้กดหยุด</p>
+</section>
+
+</aside></div>
+</main>
+
+<script>
+
+const fullscreenMessage = document.getElementById('fullscreen-message');
+const fullscreenControls = [
+  {button: document.getElementById('dashboard-fullscreen'), target: document.getElementById('dashboard'), label: 'Dashboard เต็มจอ'},
+  {button: document.getElementById('image-fullscreen'), target: document.getElementById('camera-screen'), label: 'ภาพเต็มจอ'}
+];
+function updateFullscreenControls() {
+  for (const {button, target, label} of fullscreenControls) {
+    const active = document.fullscreenElement === target;
+    button.textContent = active ? 'ออกจากเต็มจอ' : label;
+    button.setAttribute('aria-pressed', String(active));
+  }
+}
+for (const {button, target} of fullscreenControls) {
+  button.disabled = !document.fullscreenEnabled || !target.requestFullscreen;
+  button.addEventListener('click', async () => {
+    fullscreenMessage.hidden = true;
+    try {
+      if (document.fullscreenElement === target) await document.exitFullscreen();
+      else await target.requestFullscreen();
+    } catch {
+      fullscreenMessage.textContent = 'เปิดหรือปิดเต็มจอไม่สำเร็จ กรุณาลองอีกครั้ง หรือกด Esc เพื่อออก';
+      fullscreenMessage.hidden = false;
+    }
+  });
+}
+if (!document.fullscreenEnabled) {
+  fullscreenMessage.textContent = 'Browser นี้ไม่รองรับการแสดงเต็มจอ';
+  fullscreenMessage.hidden = false;
+}
+document.addEventListener('fullscreenchange', updateFullscreenControls);
+
+const ui = Object.fromEntries(['connection','camera','empty','frame','fps','age','depth','depth-empty','depth-message','processing','analysis-age','decision','side-left','side-right','vision-reason','pending-zone','camera-screen','depth-screen','range-screen','range-frame','range-empty','range-message','range-overlay','range-status'].map(id => [id, document.getElementById(id)]));
+let socket, timer, reconnect, watchdog;
+let stopped = false, latest = null, lastResponse = 0, awaiting = false;
+let rawSource = '', analysisSource = '', depthSource = '', analysisSize = null, rawSize = null;
+let showingAnalysis = false, cleanSource = '', cleanSize = null, cleanSequence = -1;
+let firstView = {source: '', size: null, depth: null, objects: [], floor: null};
+let objectSource = '', objectSize = null, objectSequence = -1, showingObjects = false;
+function showImage(element, source) {
+  if (source && element.getAttribute('src') !== source) element.src = source;
+  element.hidden = !source;
+}
+const overlayKeys = ['zones', 'depthBoxes', 'objects', 'floorLine'];
+const overlayStorageKey = 'shocar.firstView.overlays.v1';
+const overlaySettings = Object.fromEntries(overlayKeys.map(key => [key, true]));
+try {
+  const saved = JSON.parse(localStorage.getItem(overlayStorageKey));
+  for (const key of overlayKeys) if (typeof saved?.[key] === 'boolean') overlaySettings[key] = saved[key];
+} catch {}
+function updateOverlaySettings() {
+  for (const key of overlayKeys) document.getElementById(`overlay-${key}`).checked = overlaySettings[key];
+  try { localStorage.setItem(overlayStorageKey, JSON.stringify(overlaySettings)); } catch {}
+  status();
+}
+for (const key of overlayKeys) {
+  const input = document.getElementById(`overlay-${key}`);
+  input.checked = overlaySettings[key];
+  input.addEventListener('change', () => { overlaySettings[key] = input.checked; updateOverlaySettings(); });
+}
+for (const [id, enabled] of [['overlays-on', true], ['overlays-off', false]]) {
+  document.getElementById(id).addEventListener('click', () => {
+    for (const key of overlayKeys) overlaySettings[key] = enabled;
+    updateOverlaySettings();
+  });
+}
+function imageLayout(canvas, size) {
+  const scale = Math.min(canvas.width / size[0], canvas.height / size[1]);
+  const w = size[0] * scale, h = size[1] * scale;
+  const x = (canvas.width - w) / 2, y = (canvas.height - h) / 2;
+  return {x, y, w, h, px: value => x + value * scale, py: value => y + value * scale};
+}
+function drawFloor(ctx, layout, farthest, showLine = true, showDistance = true) {
+  if (!Array.isArray(farthest?.point) || farthest.point.length !== 2 ||
+      !farthest.point.every(Number.isFinite) || !Number.isFinite(farthest.distance_cm)) return;
+  const {x, y, w, h, px, py} = layout;
+  const [fx, fy] = farthest.point;
+  ctx.strokeStyle = '#4fc3f7'; ctx.fillStyle = '#4fc3f7'; ctx.lineWidth = 3;
+  if (showLine) {
+    ctx.beginPath(); ctx.moveTo(x + w / 2, y + h); ctx.lineTo(px(fx), py(fy)); ctx.stroke();
+    ctx.fillRect(px(fx) - 3, py(fy) - 3, 6, 6);
+  }
+  if (showDistance) {
+    ctx.font = 'bold 15px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    const text = `พื้นไกลสุด ≈ ${farthest.distance_cm} ซม.`;
+    const width = ctx.measureText(text).width + 12;
+    const label = Math.max(x + width / 2, Math.min(px(fx), x + w - width / 2));
+    const line = Math.max(y + 22, py(fy) - 8);
+    ctx.fillStyle = 'rgba(0,0,0,.8)'; ctx.fillRect(label - width / 2, line - 18, width, 21);
+    ctx.fillStyle = '#4fc3f7'; ctx.fillText(text, label, line);
+  }
+}
+function drawBoxes(ctx, layout, boxes, color) {
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  for (const box of boxes) {
+    if (!Array.isArray(box) || box.length !== 4 || !box.every(Number.isFinite)) continue;
+    const [x, y, w, h] = box;
+    if (w > 0 && h > 0) ctx.strokeRect(layout.px(x), layout.py(y), layout.px(x + w) - layout.px(x), layout.py(y + h) - layout.py(y));
+  }
+}
+function selectFirstView() {
+  const wantDepth = overlaySettings.zones || overlaySettings.depthBoxes;
+  const wantFloor = overlaySettings.floorLine;
+  const vision = latest?.vision;
+  firstView = {source: rawSource, size: rawSize, depth: null, objects: [], floor: null};
+  if (showingObjects && (overlaySettings.objects || (wantFloor && latest.objects.farthest_floor))) {
+    firstView = {source: objectSource, size: objectSize, depth: latest.objects.depth_overlay,
+      objects: latest.objects.objects || [], floor: latest.objects.farthest_floor};
+  } else if (showingAnalysis && cleanSource && cleanSize && cleanSequence === vision.sequence && (wantDepth || wantFloor)) {
+    firstView = {source: cleanSource, size: cleanSize, depth: vision,
+      objects: [], floor: vision.farthest_floor};
+  }
+  const enabled = overlayKeys.some(key => overlaySettings[key]);
+  document.getElementById('first-overlay-status').textContent = !firstView.source ? 'รอภาพจากกล้อง' : !enabled ? 'ภาพกล้อง · ปิดการแสดงผลเสริมทั้งหมด' :
+    'แสดงผลเฉพาะส่วนที่มีข้อมูลตรงกับภาพ · ตั้งค่าจอนี้ไม่เปลี่ยนการขับรถ';
+}
+function drawPendingZone() {
+  const canvas = ui['pending-zone'];
+  const rect = ui['camera-screen'].getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(rect.width)); canvas.height = Math.max(1, Math.round(rect.height));
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!firstView.source || !firstView.size) return;
+  const layout = imageLayout(canvas, firstView.size);
+  const depth = firstView.depth;
+  if (depth) {
+    const [zx1, zy1, zx2, zy2] = depth.zone || [0, .5, 1, .95];
+    const middle = (zx1 + zx2) / 2;
+    for (const [side, x1, x2] of [['left', zx1, middle], ['right', middle, zx2]]) {
+      const state = depth.sides?.[side];
+      const color = state === true ? '#f53c28' : state === false ? '#69d75a' : '#f5b91e';
+      const left = layout.x + x1 * layout.w, top = layout.y + zy1 * layout.h;
+      const width = (x2 - x1) * layout.w, height = (zy2 - zy1) * layout.h;
+      ctx.strokeStyle = color; ctx.lineWidth = 3;
+      if (overlaySettings.zones) ctx.strokeRect(left, top, width - 1, height);
+      if (overlaySettings.zones) {
+        ctx.fillStyle = 'rgba(0,0,0,.8)'; ctx.fillRect(left, Math.max(layout.y, top - 22), 65, 20);
+        ctx.fillStyle = color; ctx.font = 'bold 13px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText(side.toUpperCase(), left + 5, Math.max(layout.y + 18, top - 4));
+      }
+    }
+    if (overlaySettings.depthBoxes) drawBoxes(ctx, layout, depth.boxes || [], '#ffcc66');
+  }
+  if (overlaySettings.objects) drawBoxes(ctx, layout, firstView.objects.map(object => object.box), '#ffa53d');
+  drawFloor(ctx, layout, firstView.floor, overlaySettings.floorLine, overlaySettings.floorLine);
+}
+function drawRanges() {
+  const canvas = ui['range-overlay'];
+  const rect = ui['range-screen'].getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(rect.width)); canvas.height = Math.max(1, Math.round(rect.height));
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const objects = showingObjects && Array.isArray(latest?.objects?.objects) ? latest.objects.objects : [];
+  if (!showingObjects || !objectSize) return;
+  const scale = Math.min(canvas.width / objectSize[0], canvas.height / objectSize[1]);
+  const w = objectSize[0] * scale, h = objectSize[1] * scale;
+  const x = (canvas.width - w) / 2, y = (canvas.height - h) / 2;
+  const px = value => x + (value / objectSize[0]) * w;
+  const py = value => y + (value / objectSize[1]) * h;
+  drawFloor(ctx, imageLayout(canvas, objectSize), latest?.objects?.farthest_floor);
+  objects.forEach(object => {
+    const box = Array.isArray(object?.box) ? object.box : [];
+    if (box.length !== 4 || !box.every(Number.isFinite)) return;
+    const [bx, by, bw, bh] = box;
+    if (bw <= 0 || bh <= 0) return;
+    ctx.strokeStyle = '#ffa53d';
+    ctx.lineWidth = 2;
+    const left = px(bx), top = py(by), right = px(bx + bw);
+    ctx.strokeRect(left, top, right - left, py(by + bh) - top);
+  });
+}
+function status() {
+  const elapsed = (Date.now() - lastResponse) / 1000;
+  const online = socket?.readyState === WebSocket.OPEN && elapsed < 3;
+  const age = latest?.age_seconds == null ? null : latest.age_seconds + elapsed;
+  const fresh = online && latest?.connected && age !== null && age < 3;
+  const vision = latest?.vision;
+  const analysisAge = vision?.age_seconds == null ? null : vision.age_seconds + elapsed;
+  const valid = fresh && analysisAge !== null && analysisAge < 3 && ['ready','unknown'].includes(vision?.state);
+  showingAnalysis = Boolean(valid && analysisSource && depthSource);
+  const objects = latest?.objects;
+  const objectAge = objects?.age_seconds == null ? null : objects.age_seconds + elapsed;
+  showingObjects = Boolean(fresh && objects?.state === 'ready' && objectAge !== null && objectAge < 3 &&
+    objectSource && objectSize && objectSequence === objects.sequence);
+  ui.connection.textContent = online ? '● Server เชื่อมต่อแล้ว' : '● กำลังเชื่อมต่อ server…';
+  ui.camera.textContent = fresh ? 'กล้องออนไลน์' : latest?.configured ? 'ภาพไม่สด' : 'ยังไม่ตั้งค่ากล้อง';
+  ui.fps.textContent = fresh ? latest.fps.toFixed(1) : '—';
+  ui.age.textContent = age === null || !online ? '—' : age.toFixed(1);
+  ui.processing.textContent = valid && vision.processing_ms != null ? vision.processing_ms.toFixed(0) : '—';
+  ui['analysis-age'].textContent = valid ? analysisAge.toFixed(1) : '—';
+  const known = showingAnalysis && typeof vision.blocked === 'boolean';
+  ui.decision.textContent = known ? vision.blocked ? 'พบในกรอบ' : 'ยังไม่พบในกรอบ' : 'ยังประเมินไม่ได้';
+  ui.decision.dataset.state = known ? vision.blocked ? 'blocked' : 'clear' : 'unknown';
+  for (const [side, label] of [['left', 'ซ้าย'], ['right', 'ขวา']]) {
+    const blocked = showingAnalysis ? vision.sides?.[side] : null;
+    const element = ui[`side-${side}`];
+    element.dataset.state = blocked === true ? 'blocked' : blocked === false ? 'clear' : 'unknown';
+    element.textContent = `${label}: ${blocked === true ? 'พบ' : blocked === false ? 'ยังไม่พบ' : 'ประเมินไม่ได้'}`;
+  }
+  const reason = !online ? 'Server ขาดการเชื่อมต่อ' : !fresh ? 'รอภาพสดจากกล้อง' : valid ? showingAnalysis ? vision.reason : 'รอภาพวิเคราะห์คู่ใหม่' :
+    ['loading','error','waiting','stale'].includes(vision?.state) ? vision.reason : 'ผลวิเคราะห์เก่า · กำลังรอผลใหม่';
+  ui['vision-reason'].textContent = reason;
+  ui['depth-message'].textContent = reason;
+  ui['depth-empty'].hidden = showingAnalysis;
+  ui.depth.hidden = !showingAnalysis;
+  if (showingAnalysis) showImage(ui.depth, depthSource);
+  selectFirstView();
+  const source = firstView.source;
+  showImage(ui.frame, source);
+  showImage(ui['range-frame'], showingObjects ? objectSource : rawSource);
+  ui.empty.hidden = Boolean(source);
+  ui['range-empty'].hidden = Boolean(showingObjects ? objectSource : rawSource);
+  const objectReason = !online ? 'Server ขาดการเชื่อมต่อ' : !fresh ? 'รอภาพสดจากกล้อง' :
+    objects?.state === 'ready' ? 'ผลตรวจจับเก่าหรือรอภาพคู่ใหม่ · กำลังรอผลใหม่' : objects?.reason || 'รอผลตรวจจับสิ่งของ';
+  ui['range-message'].textContent = objectReason;
+  const detected = showingObjects && Array.isArray(objects.objects) ? objects.objects.length : 0;
+  const farthestDistance = objects?.farthest_floor?.distance_cm;
+  ui['range-status'].textContent = showingObjects ?
+    `${detected ? `ตรวจพบ ${detected} วัตถุ` : 'ยังไม่พบสิ่งของในภาพนี้'} · ไม่กรองระยะ · ` +
+    `${Number.isFinite(farthestDistance) ? `พื้นไกลสุด ≈ ${farthestDistance} ซม. · ระยะประมาณ ยังไม่สอบเทียบ` : 'พื้นไกลสุด — · ประเมินไม่ได้'}` : objectReason;
+  if (firstView.size) ui['camera-screen'].style.aspectRatio = firstView.size.join(' / ');
+  const rangeSize = showingObjects ? objectSize : rawSize;
+  if (rangeSize) ui['range-screen'].style.aspectRatio = rangeSize.join(' / ');
+  if (analysisSize) ui['depth-screen'].style.aspectRatio = analysisSize.join(' / ');
+  drawPendingZone();
+  drawRanges();
+}
+async function decode(value) {
+  if (!value) return null;
+  const image = new Image(); image.src = `data:image/jpeg;base64,${value}`;
+  await image.decode(); return {source: image.src, size: [image.naturalWidth, image.naturalHeight]};
+}
+function request() {
+  if (!awaiting && socket?.readyState === WebSocket.OPEN) { awaiting = true; socket.send('next'); }
+}
+function connect() {
+  if (stopped) return;
+  const target = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/viewer`);
+  socket = target;
+  target.onopen = () => {
+    if (socket !== target || stopped) return;
+    latest = null; analysisSource = depthSource = ''; analysisSize = null;
+    objectSource = ''; objectSize = null; objectSequence = -1;
+    cleanSource = ''; cleanSize = null; cleanSequence = -1;
+    lastResponse = Date.now(); awaiting = false; status(); request();
+  };
+  target.onmessage = async event => {
+    try {
+      const result = JSON.parse(event.data);
+      const [raw, analyzed, depth, objectImage, clean] = await Promise.all([decode(result.image), decode(result.vision?.image), decode(result.vision?.depth_image), decode(result.objects?.image), decode(result.vision?.clean_image)]);
+      if (socket !== target || stopped || target.readyState !== WebSocket.OPEN) return;
+      if (clean) { cleanSource = clean.source; cleanSize = clean.size; cleanSequence = result.vision.sequence; }
+      if (raw) { rawSource = raw.source; rawSize = raw.size; }
+      if (analyzed && depth) { analysisSource = analyzed.source; analysisSize = analyzed.size; depthSource = depth.source; }
+      if (objectImage) { objectSource = objectImage.source; objectSize = objectImage.size; objectSequence = result.objects.sequence; }
+      if (result.objects?.state !== 'ready') { objectSource = ''; objectSize = null; objectSequence = -1; }
+      if (!['ready','unknown'].includes(result.vision?.state)) { analysisSource = depthSource = cleanSource = ''; analysisSize = cleanSize = null; cleanSequence = -1; }
+      if (result.updated_at === null) { rawSource = ''; rawSize = null; }
+      latest = result; lastResponse = Date.now(); status(); awaiting = false; timer = setTimeout(request, 70);
+    } catch { target.close(); }
+  };
+  target.onerror = () => target.close();
+  target.onclose = () => { if (socket !== target) return; clearTimeout(timer); awaiting = false; status(); if (!stopped) reconnect = setTimeout(connect, 2000); };
+}
+function resume() {
+  stopped = false;
+  watchdog = setInterval(() => { status(); if (socket?.readyState === WebSocket.OPEN && Date.now() - lastResponse > 5000) socket.close(); }, 500);
+  connect();
+}
+new ResizeObserver(drawPendingZone).observe(ui['camera-screen']);
+new ResizeObserver(drawRanges).observe(ui['range-screen']);
+window.addEventListener('pagehide', () => { stopped = true; clearTimeout(timer); clearTimeout(reconnect); clearInterval(watchdog); socket?.close(); });
+window.addEventListener('pageshow', event => { if (event.persisted) resume(); });
+resume();
+
+</script>
+<script>
+const autoUI = Object.fromEntries(['auto-start','auto-stop','auto-state','auto-reason'].map(id => [id, document.getElementById(id)]));
+const autoNames = {forward:'กำลังเดินหน้า', left:'กำลังเลี้ยวซ้าย', right:'กำลังเลี้ยวขวา', stop:'หยุดรอ'};
+const searchNames = {waiting:'หยุดก่อนหาทาง', turning:'กำลังหมุนหาทาง', checking:'หยุดรอภาพใหม่', parked:'หยุดรอทางโล่ง'};
+let autoSocket, autoStatus = null, autoReplyAt = 0, autoPending = false;
+let autoIntent = false, autoClosed = false, autoReconnect;
+function viewerFresh() {
+  const elapsed = (Date.now() - lastResponse) / 1000;
+  return socket?.readyState === WebSocket.OPEN && elapsed < 3 && latest?.connected &&
+    latest.age_seconds != null && latest.age_seconds + elapsed < 3 &&
+    latest.vision?.age_seconds != null && latest.vision.age_seconds + elapsed < 3 &&
+    ['ready','unknown'].includes(latest.vision.state);
+}
+function renderAuto() {
+  const online = autoStatus !== null && autoSocket?.readyState === WebSocket.OPEN && Date.now() - autoReplyAt < 600;
+  autoUI['auto-start'].disabled = !online || !autoStatus?.can_start || !viewerFresh() || document.hidden || autoPending;
+  autoUI['auto-stop'].disabled = autoSocket?.readyState !== WebSocket.OPEN;
+  autoUI['auto-state'].textContent = !online ? 'ระบบควบคุมขาดการติดต่อ' : autoStatus?.enabled ?
+    `${searchNames[autoStatus.search_phase] || autoNames[autoStatus.command] || 'หยุดรอ'}${autoStatus.is_owner ? '' : ' · Dashboard อื่นควบคุมอยู่'}` : 'ปิดโหมดอัตโนมัติ';
+  autoUI['auto-state'].dataset.state = online && autoStatus?.enabled && autoStatus.command !== 'stop' ? 'clear' : 'unknown';
+  autoUI['auto-reason'].textContent = !online ? 'ยังไม่ยืนยันว่ารถหยุดแล้ว · รอเชื่อมต่อใหม่' :
+    autoStatus?.error || (!autoStatus?.configured ? 'ยังไม่ตั้งค่า ROBOT_URL' :
+      autoStatus.busy && !autoStatus.enabled ? 'มีผู้ควบคุมรถอยู่ · หยุดก่อนเริ่มอัตโนมัติ' : autoStatus?.reason || 'รอสถานะ');
+}
+function sendAuto(action) {
+  if (autoSocket?.readyState !== WebSocket.OPEN) return;
+  autoPending = true;
+  autoSocket.send(action);
+}
+function pauseAuto() {
+  autoIntent = false;
+  sendAuto('pause');
+  autoUI['auto-start'].disabled = true;
+}
+autoUI['auto-start'].addEventListener('click', () => {
+  if (autoUI['auto-start'].disabled) return;
+  autoIntent = true;
+  sendAuto('start');
+  renderAuto();
+});
+autoUI['auto-stop'].addEventListener('click', () => {
+  autoIntent = false;
+  sendAuto('stop');
+  autoUI['auto-state'].textContent = 'กำลังส่งหยุด…';
+});
+function connectAuto() {
+  if (autoClosed) return;
+  const target = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/auto`);
+  autoSocket = target;
+  autoStatus = null; autoReplyAt = Date.now(); autoPending = false; autoIntent = false;
+  renderAuto();
+  target.onmessage = event => {
+    if (autoSocket !== target || autoClosed) return;
+    try {
+      autoStatus = JSON.parse(event.data); autoReplyAt = Date.now(); autoPending = false;
+      if (autoStatus.error || !autoStatus.enabled) autoIntent = false;
+      if (autoStatus.enabled && autoStatus.is_owner && (!autoIntent || document.hidden || !viewerFresh())) pauseAuto();
+      renderAuto();
+    } catch { target.close(); }
+  };
+  target.onerror = () => target.close();
+  target.onclose = () => {
+    if (autoSocket !== target) return;
+    autoIntent = false; autoStatus = null; autoPending = false; renderAuto();
+    if (!autoClosed) autoReconnect = setTimeout(connectAuto, 2000);
+  };
+}
+setInterval(() => {
+  if (autoIntent && (document.hidden || !viewerFresh())) pauseAuto();
+  if (autoSocket?.readyState === WebSocket.OPEN && Date.now() - autoReplyAt >= 600 && autoReplyAt) {
+    autoIntent = false; autoSocket.close();
+  } else if (!autoPending && autoSocket?.readyState === WebSocket.OPEN) sendAuto('heartbeat');
+  renderAuto();
+}, 200);
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseAuto(); });
+window.addEventListener('pagehide', () => {
+  pauseAuto(); autoClosed = true; clearTimeout(autoReconnect); autoSocket?.close();
+});
+window.addEventListener('pageshow', event => { if (event.persisted) { autoClosed = false; connectAuto(); } });
+connectAuto();
+</script>
+</body>
+</html>

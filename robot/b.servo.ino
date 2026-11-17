@@ -13,7 +13,6 @@ void servo1(int angle) {
 
 void setServo() {
   Wire.begin(21, 22);
-  Serial.println("wire ok");
 
   if (!pwm.begin()) {
     Serial.println("ไม่เจอ PCA9685");
@@ -25,5 +24,5 @@ void setServo() {
   pwm.setPWMFreq(50);
   delay(10);
 
-  // servo1(0);
+  servo1(0);
 }

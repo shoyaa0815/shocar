@@ -1,0 +1,30 @@
+.env
+env/
+
+.vscode/
+
+venv/
+__pycache__/
+*.pyc
+/robot/robot_config.h
+
+# Environment secrets
+.env.*
+!.env.example
+
+# Local TLS key and certificate
+/certs/key.pem
+/certs/cert.pem
+*.key
+
+# Python virtual environment
+.venv/
+
+# Downloaded YOLO models and generated output
+*.pt
+/runs/
+/models/*.pth
+/models/*.part
+
+# Local tests
+/tests/
