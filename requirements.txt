@@ -1,4 +1,4 @@
-# Direct dependencies only; pip resolves the rest (torch/CUDA, ultralytics, fastapi, ...).
+# Direct dependencies
 fastapi==0.143.0
 uvicorn[standard]==0.54.0
 python-dotenv==1.2.4
